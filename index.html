@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寶可夢島：訓練家的情緒調節試煉</title>
     
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- 引入 React 核心庫 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     
+    <!-- 引入 Babel 用於瀏覽器編譯 -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* 強制從 Google Fonts 備援載入圓體，並優先使用粉圓體 */
+        /* 優先載入粉圓體，並以 Noto Sans TC 作為備援 */
         @import url('https://cdn.jsdelivr.net/npm/jf-openhuninn@1.1/jf-openhuninn-1.1.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
         
@@ -28,22 +31,28 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #333; /* 視窗外部背景色 */
+            background-color: #222; /* 視窗外部背景色，稍微調深一點 */
             font-family: 'jf-openhuninn', 'Noto Sans TC', sans-serif;
         }
 
-        /* 遊戲核心容器：保持 16:9 比例並縮放 */
+        /* 外層封裝容器：負責置中 */
+        #viewport-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 遊戲核心容器 */
         #game-container {
             position: relative;
             width: var(--game-width);
             height: var(--game-height);
             background-color: #fefce8;
             overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            /* 居中對齊 */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            box-shadow: 0 0 100px rgba(0,0,0,0.7);
+            flex-shrink: 0; /* 防止被 flex 壓縮 */
         }
 
         @keyframes badgePop {
@@ -111,19 +120,19 @@
                 if (loadedCount === total) setTimeout(() => setCurrentScreen('intro'), 500);
               };
               img.onerror = () => {
-                loadedCount++; // 即使報錯也跳過，避免卡死
+                loadedCount++; 
                 if (loadedCount === total) setCurrentScreen('intro');
               };
             });
           }, []);
 
-          // --- 2. 螢幕縮放邏輯 ---
+          // --- 2. 螢幕縮放邏輯 (修正位移問題) ---
           useEffect(() => {
             const handleResize = () => {
               const winW = window.innerWidth;
               const winH = window.innerHeight;
-              const scale = Math.min(winW / 1280, winH / 720);
-              setScale(scale);
+              const s = Math.min(winW / 1280, winH / 720);
+              setScale(s);
             };
             handleResize();
             window.addEventListener('resize', handleResize);
@@ -137,7 +146,7 @@
           };
 
           const renderLoading = () => (
-            <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white">
+            <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white w-full">
               <div className="text-2xl mb-4">正在載入寶可夢島素材... {loadProgress}%</div>
               <div className="w-64 h-4 bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full bg-yellow-400 transition-all duration-300" style={{ width: `${loadProgress}%` }}></div>
@@ -148,10 +157,10 @@
           const renderIntro = () => (
             <div className="relative h-full w-full flex flex-col items-center justify-center bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
               <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-              <div className="relative z-10 text-center">
-                <h1 className="text-6xl font-bold text-white mb-8 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">寶可夢島：訓練家的情緒調節試煉</h1>
+              <div className="relative z-10 text-center px-4">
+                <h1 className="text-6xl font-bold text-white mb-12 drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">寶可夢島：訓練家的情緒調節試煉</h1>
                 <button onClick={() => { setCurrentScreen('map'); if(audioRef.current) { audioRef.current.play(); setIsMusicPlaying(true); } }} 
-                  className="px-12 py-6 bg-yellow-500 hover:bg-yellow-400 text-white text-3xl font-bold rounded-full shadow-2xl transform transition hover:scale-110">
+                  className="px-16 py-8 bg-yellow-500 hover:bg-yellow-400 text-white text-4xl font-bold rounded-full shadow-[0_10px_20px_rgba(0,0,0,0.3)] transform transition hover:scale-110">
                   大家準備好了嗎？出發！
                 </button>
               </div>
@@ -160,32 +169,35 @@
 
           const renderMap = () => (
             <div className="relative h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
-              {/* Header: 無白底 */}
-              <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
-                <div className="flex items-center gap-4 pointer-events-auto">
-                   {/* 音樂按鍵移至最左側 */}
-                   <button onClick={toggleMusic} className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg border-4 border-yellow-400 text-2xl hover:scale-110 transition">
+              {/* Header: 透明背景 */}
+              <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-start z-30 pointer-events-none">
+                <div className="flex items-center gap-6 pointer-events-auto">
+                   {/* 音樂按鍵 */}
+                   <button onClick={toggleMusic} className="w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl hover:scale-110 transition">
                     {isMusicPlaying ? '🎵' : '🔇'}
                   </button>
                   {/* 徽章欄 */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3 bg-black bg-opacity-30 p-2 rounded-full backdrop-blur-md border border-white border-opacity-20 shadow-xl">
                     {[1, 2, 3, 4, 5].map(id => (
-                      <div key={id} className="w-14 h-14 rounded-full border-4 border-dashed border-white border-opacity-50 flex items-center justify-center bg-black bg-opacity-20 backdrop-blur-sm overflow-hidden">
-                        {badges.includes(id) ? <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-cover" /> : null}
+                      <div key={id} className="w-16 h-16 rounded-full border-4 border-dashed border-white border-opacity-30 flex items-center justify-center bg-white bg-opacity-10 overflow-hidden relative">
+                        {badges.includes(id) ? (
+                            <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-contain p-1" />
+                        ) : null}
                       </div>
                     ))}
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-white drop-shadow-lg pointer-events-auto">寶可夢島地圖</h2>
+                <h2 className="text-4xl font-bold text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-auto">寶可夢島地圖</h2>
               </div>
               
+              {/* 道館按鈕 */}
               {Object.values(gameData.gyms).map(gym => {
                 const isCompleted = badges.includes(gym.id);
                 return (
                   <button key={gym.id} onClick={() => { setActiveGymId(gym.id); setSelectedChoice(null); setCurrentScreen('gym'); }}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 ${isCompleted ? 'opacity-70' : 'animate-bounce'}`}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 z-20 ${isCompleted ? 'opacity-70' : 'animate-bounce'}`}
                     style={{ top: gym.position.top, left: gym.position.left }}>
-                    <span className={`px-6 py-2 rounded-full text-xl font-bold shadow-2xl border-4 ${isCompleted ? 'bg-gray-400 border-gray-600 text-white' : 'bg-white border-yellow-400 text-gray-800'}`}>
+                    <span className={`px-8 py-3 rounded-full text-2xl font-bold shadow-[0_8px_15px_rgba(0,0,0,0.3)] border-4 ${isCompleted ? 'bg-gray-500 border-gray-700 text-white' : 'bg-white border-yellow-400 text-gray-800'}`}>
                       {isCompleted ? '✅ ' : ''}{gym.name}
                     </span>
                   </button>
@@ -198,28 +210,29 @@
             const gym = gameData.gyms[activeGymId];
             return (
               <div className="flex flex-col h-full bg-blue-50 p-8">
-                <div className="max-w-5xl mx-auto w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-                  <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+                <div className="max-w-5xl mx-auto w-full h-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
+                  <div className="bg-blue-600 text-white p-6 flex justify-between items-center shadow-lg">
+                    <div className="flex items-center gap-6">
                       <img src={trainerGender === 'girl' ? "./player01.png" : "./player02.png"} 
-                        className="w-16 h-16 rounded-full border-4 border-white bg-white object-cover cursor-pointer hover:scale-110 transition"
-                        onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')} />
-                      <h2 className="text-3xl font-bold">{gym.name}</h2>
+                        className="w-20 h-20 rounded-full border-4 border-white bg-white shadow-md object-cover cursor-pointer hover:rotate-12 transition transform"
+                        onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')} 
+                        title="點擊切換性別" />
+                      <h2 className="text-4xl font-bold tracking-wide">{gym.name}</h2>
                     </div>
-                    <button onClick={() => setCurrentScreen('map')} className="text-xl font-bold hover:underline">返回地圖</button>
+                    <button onClick={() => setCurrentScreen('map')} className="text-2xl font-bold hover:text-blue-200 transition">返回地圖</button>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <img src={gym.sceneImg} className="w-full h-64 object-cover" />
-                    <div className="p-8">
-                      <p className="text-2xl text-gray-800 mb-8 leading-relaxed bg-blue-50 p-6 rounded-2xl border-l-8 border-blue-500">{gym.story}</p>
-                      <div className="grid grid-cols-2 gap-6">
+                  <div className="flex-1 overflow-y-auto bg-gray-50">
+                    <img src={gym.sceneImg} className="w-full h-80 object-cover shadow-inner" />
+                    <div className="p-10">
+                      <p className="text-3xl text-gray-800 mb-10 leading-relaxed bg-blue-100 p-8 rounded-3xl border-l-[12px] border-blue-500 shadow-sm">{gym.story}</p>
+                      <div className="grid grid-cols-2 gap-8">
                         {gym.choices.map(c => (
                           <button key={c.id} onClick={() => { setSelectedChoice(c); setCurrentScreen('result'); }}
-                            className="p-4 bg-white border-4 border-gray-100 hover:border-blue-500 rounded-2xl shadow hover:shadow-xl transition flex flex-col items-center gap-4">
-                            <img src={c.choiceImg} className="w-full h-40 object-cover rounded-xl" />
-                            <div className="flex items-center gap-4 w-full">
-                              <span className="bg-blue-100 text-blue-800 w-10 h-10 rounded-full flex items-center justify-center shrink-0">{c.id}</span>
-                              <span className="text-xl font-bold">{c.text}</span>
+                            className="p-6 bg-white border-4 border-gray-100 hover:border-blue-500 hover:bg-blue-50 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col items-center gap-6 group">
+                            <img src={c.choiceImg} className="w-full h-48 object-cover rounded-2xl shadow-md group-hover:scale-105 transition" />
+                            <div className="flex items-center gap-6 w-full text-left">
+                              <span className="bg-blue-600 text-white text-2xl w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-md font-bold">{c.id}</span>
+                              <span className="text-2xl font-bold text-gray-700">{c.text}</span>
                             </div>
                           </button>
                         ))}
@@ -235,15 +248,15 @@
             const isSuccess = selectedChoice.isCorrect;
             return (
               <div className={`flex flex-col h-full p-8 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}>
-                <div className="max-w-4xl mx-auto w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-                  <div className={`p-4 text-white text-center text-3xl font-bold ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
+                <div className="max-w-4xl mx-auto w-full h-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-8 border-opacity-20 transition-colors" style={{borderColor: isSuccess ? '#22c55e' : '#ef4444'}}>
+                  <div className={`p-6 text-white text-center text-4xl font-bold shadow-md ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
                     {isSuccess ? '🌟 挑戰成功！' : '💦 哎呀，再試一次！'}
                   </div>
-                  <img src={selectedChoice.resultImg} className="w-full h-80 object-cover" />
-                  <div className="p-8 flex flex-col items-center text-center justify-center flex-1">
-                    <p className="text-3xl text-gray-800 mb-8">{selectedChoice.resultText}</p>
+                  <img src={selectedChoice.resultImg} className="w-full h-[380px] object-cover" />
+                  <div className="p-10 flex flex-col items-center text-center justify-center flex-1">
+                    <p className="text-4xl text-gray-800 mb-12 font-bold leading-snug">{selectedChoice.resultText}</p>
                     <button onClick={() => isSuccess ? setCurrentScreen(badges.includes(activeGymId) ? 'map' : 'badge_award') : setCurrentScreen('gym')}
-                      className={`px-12 py-5 text-2xl font-bold text-white rounded-full shadow-xl transition hover:scale-110 ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}>
+                      className={`px-16 py-6 text-3xl font-bold text-white rounded-full shadow-2xl transition transform hover:scale-110 ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}>
                       {isSuccess ? '繼續' : '重新想一想'}
                     </button>
                   </div>
@@ -254,14 +267,14 @@
 
           const renderBadgeAward = () => (
             <div className="flex flex-col h-full bg-yellow-50 items-center justify-center p-8">
-              <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-12 border-8 border-yellow-300 text-center flex flex-col items-center">
-                <h2 className="text-5xl font-bold text-yellow-600 mb-10">獲得徽章！</h2>
-                <div className="animate-badge-pop mb-10">
-                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-64 h-64 rounded-full border-8 border-yellow-400 shadow-2xl object-cover" />
-                  <p className="text-4xl font-bold text-yellow-600 mt-8">{gameData.gyms[activeGymId].badgeName}</p>
+              <div className="max-w-3xl w-full bg-white rounded-[50px] shadow-2xl p-16 border-[12px] border-yellow-300 text-center flex flex-col items-center">
+                <h2 className="text-6xl font-bold text-yellow-600 mb-12">獲得徽章！</h2>
+                <div className="animate-badge-pop mb-12">
+                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-72 h-72 rounded-full border-8 border-yellow-400 shadow-2xl object-contain bg-yellow-50 p-4" />
+                  <p className="text-5xl font-bold text-yellow-600 mt-10">{gameData.gyms[activeGymId].badgeName}</p>
                 </div>
                 <button onClick={() => { setBadges([...badges, activeGymId]); if(badges.length+1 === 5) setCurrentScreen('ending'); else setCurrentScreen('map'); }}
-                  className="px-12 py-5 bg-yellow-500 text-white text-3xl font-bold rounded-full shadow-xl hover:bg-yellow-400 transition hover:scale-105">
+                  className="px-16 py-6 bg-yellow-500 text-white text-4xl font-bold rounded-full shadow-2xl hover:bg-yellow-400 transition transform hover:scale-110">
                   收下徽章，回到地圖
                 </button>
               </div>
@@ -270,17 +283,17 @@
 
           const renderEnding = () => (
             <div className="h-full bg-pink-50 p-8 flex items-center justify-center">
-              <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-10 border-8 border-yellow-400 text-center overflow-y-auto">
-                <h1 className="text-5xl font-bold text-pink-600 mb-6">🎉 恭喜成為情緒大師！</h1>
-                <img src={gameData.endingImg} className="w-full h-80 object-cover rounded-2xl mb-8" />
-                <p className="text-2xl text-gray-700 leading-relaxed mb-8">因為有你們的幫忙，寶可夢們都學會了情緒魔法。他們現在正手牽著手，在舞台上謝謝你們呢！</p>
-                <div className="bg-yellow-100 p-8 rounded-3xl border-4 border-yellow-300 inline-block">
-                   <p className="text-2xl font-bold text-yellow-800 mb-6">🏆 你的情緒大師徽章 🏆</p>
-                   <div className="flex justify-center gap-6">
+              <div className="max-w-5xl w-full h-full bg-white rounded-[50px] shadow-2xl p-12 border-[12px] border-yellow-400 text-center overflow-y-auto flex flex-col items-center">
+                <h1 className="text-6xl font-bold text-pink-600 mb-8">🎉 恭喜成為情緒大師！</h1>
+                <img src={gameData.endingImg} className="w-full h-96 object-cover rounded-[40px] mb-10 shadow-lg" />
+                <p className="text-3xl text-gray-700 leading-relaxed mb-10 font-bold">因為有你們的幫忙，寶可夢們都學會了情緒魔法。<br/>他們現在正手牽著手，在舞台上謝謝你們呢！</p>
+                <div className="bg-yellow-100 p-10 rounded-[40px] border-4 border-yellow-300 inline-block shadow-inner w-full">
+                   <p className="text-4xl font-bold text-yellow-800 mb-10">🏆 你的情緒大師徽章 🏆</p>
+                   <div className="flex justify-center gap-10">
                       {Object.values(gameData.gyms).map(gym => (
                         <div key={gym.id} className="flex flex-col items-center">
-                          <img src={gym.badgeImg} className="w-24 h-24 rounded-full border-4 border-white shadow-md mb-2 object-cover" />
-                          <span className="text-sm font-bold text-gray-600">{gym.badgeName}</span>
+                          <img src={gym.badgeImg} className="w-28 h-28 rounded-full border-4 border-white shadow-xl mb-4 object-contain bg-white p-2" />
+                          <span className="text-xl font-bold text-gray-700">{gym.badgeName}</span>
                         </div>
                       ))}
                    </div>
@@ -290,15 +303,17 @@
           );
 
           return (
-            <div id="game-container" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
-              <audio ref={audioRef} src="./bgm.mp3" loop></audio>
-              {currentScreen === 'loading' && renderLoading()}
-              {currentScreen === 'intro' && renderIntro()}
-              {currentScreen === 'map' && renderMap()}
-              {currentScreen === 'gym' && renderGym()}
-              {currentScreen === 'result' && renderResult()}
-              {currentScreen === 'badge_award' && renderBadgeAward()}
-              {currentScreen === 'ending' && renderEnding()}
+            <div id="viewport-wrapper">
+                <div id="game-container" style={{ transform: `scale(${scale})` }}>
+                  <audio ref={audioRef} src="./bgm.mp3" loop></audio>
+                  {currentScreen === 'loading' && renderLoading()}
+                  {currentScreen === 'intro' && renderIntro()}
+                  {currentScreen === 'map' && renderMap()}
+                  {currentScreen === 'gym' && renderGym()}
+                  {currentScreen === 'result' && renderResult()}
+                  {currentScreen === 'badge_award' && renderBadgeAward()}
+                  {currentScreen === 'ending' && renderEnding()}
+                </div>
             </div>
           );
         }

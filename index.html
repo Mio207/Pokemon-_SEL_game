@@ -158,11 +158,9 @@
               {/* Header */}
               <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-start z-30 pointer-events-none">
                 <div className="flex items-center gap-6 pointer-events-auto">
-                   {/* 音樂按鍵 */}
                    <button onClick={toggleMusic} className="w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl hover:scale-110 transition">
                     {isMusicPlaying ? '🎵' : '🔇'}
                   </button>
-                  {/* 徽章欄 */}
                   <div className="flex gap-3 bg-black bg-opacity-30 p-2 rounded-full backdrop-blur-md border border-white border-opacity-20 shadow-xl">
                     {[1, 2, 3, 4, 5].map(id => (
                       <div key={id} className="w-16 h-16 rounded-full border-4 border-dashed border-white border-opacity-30 flex items-center justify-center relative overflow-hidden">
@@ -262,8 +260,8 @@
               <div className="max-w-3xl w-full bg-white rounded-[50px] shadow-2xl p-16 border-[12px] border-yellow-300 text-center flex flex-col items-center">
                 <h2 className="text-6xl font-bold text-yellow-600 mb-12">獲得徽章！</h2>
                 <div className="mb-12">
-                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-72 h-72 rounded-full border-8 border-yellow-400 shadow-2xl object-contain bg-yellow-50 p-4" />
-                  <p className="text-5xl font-bold text-yellow-600 mt-10">{gameData.gyms[activeGymId].badgeName}</p>
+                  {/* 已移除名稱標題 */}
+                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-72 h-72 rounded-full border-8 border-yellow-400 shadow-2xl object-contain bg-white p-4" />
                 </div>
                 <button onClick={() => { setBadges([...badges, activeGymId]); if(badges.length+1 === 5) setCurrentScreen('ending'); else setCurrentScreen('map'); }}
                   className="px-16 py-6 bg-yellow-500 text-white text-4xl font-bold rounded-full shadow-2xl hover:bg-yellow-400 transition transform hover:scale-110">
@@ -287,7 +285,7 @@
                       {Object.values(gameData.gyms).map(gym => (
                         <div key={gym.id} className="flex flex-col items-center">
                           <img src={gym.badgeImg} className="w-28 h-28 rounded-full border-4 border-white shadow-xl mb-4 object-contain bg-white p-2" />
-                          <span className="text-xl font-bold text-gray-700">{gym.badgeName}</span>
+                          {/* 已移除徽章名稱 */}
                         </div>
                       ))}
                    </div>

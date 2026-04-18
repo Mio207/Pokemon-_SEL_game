@@ -5,25 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寶可夢島：訓練家的情緒調節試煉</title>
     
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 引入 React 核心庫 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     
-    <!-- 引入 Babel 用來在瀏覽器中編譯 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- 自訂 CSS：粉圓體與動畫 -->
     <style>
+        /* 強制從 Google Fonts 備援載入圓體，並優先使用粉圓體 */
         @import url('https://cdn.jsdelivr.net/npm/jf-openhuninn@1.1/jf-openhuninn-1.1.min.css');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
         
-        body {
-            font-family: 'jf-openhuninn', sans-serif;
+        :root {
+            --game-width: 1280px;
+            --game-height: 720px;
+        }
+
+        body, html {
             margin: 0;
             padding: 0;
-            background-color: #fefce8; /* bg-yellow-50 */
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #333; /* 視窗外部背景色 */
+            font-family: 'jf-openhuninn', 'Noto Sans TC', sans-serif;
+        }
+
+        /* 遊戲核心容器：保持 16:9 比例並縮放 */
+        #game-container {
+            position: relative;
+            width: var(--game-width);
+            height: var(--game-height);
+            background-color: #fefce8;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            /* 居中對齊 */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         @keyframes badgePop {
@@ -35,347 +55,175 @@
         .animate-badge-pop {
             animation: badgePop 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
+
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
-    <!-- React 的掛載點 -->
     <div id="root"></div>
 
-    <!-- 遊戲邏輯與組件 -->
     <script type="text/babel">
-        // 新增 useRef 用來綁定音樂播放器
-        const { useState, useRef } = React;
+        const { useState, useRef, useEffect } = React;
 
-        // --- 遊戲資料庫 (包含腳本與圖片佔位符) ---
         const gameData = {
           gyms: {
-            1: {
-              id: 1,
-              name: "迷霧森林",
-              icon: "🌲",
-              position: { top: '20%', left: '50%' },
-              sceneImg: "./scenegraph_dojo1_misty_forest.png",
-              story: "搗蛋的「耿鬼」跑來找你，指著樹下睡覺的同學說：「我們去把他的精靈球藏起來！如果你不跟我一起去，我就不跟你做朋友了！」",
-              choices: [
-                {
-                  id: 'A',
-                  text: "跟著做 (為了過關，只好跟著去)",
-                  choiceImg: "./dojo1_A1.png",
-                  resultImg: "./dojo1_A2.png",
-                  resultText: "雖然你跟著去了，但你的心裡覺得悶悶的。真正的朋友，不會逼你做會讓別人受傷的事喔。",
-                  isCorrect: false
-                },
-                {
-                  id: 'B',
-                  text: "發動【守住】 (雙手比X，大聲拒絕)",
-                  choiceImg: "./dojo1_B1.png",
-                  resultImg: "./dojo1_B2.png",
-                  resultText: "漂亮！你成功發動了【守住】！你保護了自己的心，耿鬼被你的堅定嚇跑，迷霧散開了！",
-                  isCorrect: true,
-                  badgeName: "界線徽章",
-                  badgeIcon: "🛡️",
-                  badgeImg: "./badges1.png"
-                }
-              ]
-            },
-            2: {
-              id: 2,
-              name: "溫馨草原",
-              icon: "🥚",
-              position: { top: '75%', left: '75%' },
-              sceneImg: "./scenegraph_dojo2_meadow.png",
-              story: "訓練家帶回了一顆蛋，孵出了可愛的「波克比」。訓練家都在照顧波克比，原本最受寵愛的「伊布」覺得自己被冷落了，心裡酸酸的，好像有把火在燒。",
-              choices: [
-                {
-                  id: 'A',
-                  text: "發動【衝擊】 (撞翻奶瓶，大哭大鬧)",
-                  choiceImg: "./dojo2_A1.png",
-                  resultImg: "./dojo2_A2.png",
-                  resultText: "哎呀，雖然你很難過，但撞人會讓大家受傷，訓練家也會生氣喔。",
-                  isCorrect: false
-                },
-                {
-                  id: 'B',
-                  text: "發動【撒嬌】 (蹭一蹭，說出需要)",
-                  choiceImg: "./dojo2_B1.png",
-                  resultImg: "./dojo2_B2.png",
-                  resultText: "你真棒！成功收服了心裡的「嫉妒怪」。訓練家空出一隻手摸摸伊布說：「謝謝伊布等我，我也很愛你喔！」",
-                  isCorrect: true,
-                  badgeName: "愛心徽章",
-                  badgeIcon: "💖",
-                  badgeImg: "./badges2.png"
-                }
-              ]
-            },
-            3: {
-              id: 3,
-              name: "分享果園",
-              icon: "🍎",
-              position: { top: '30%', left: '80%' },
-              sceneImg: "./scenegraph_dojo3_fruit_orchard.png",
-              story: "小火龍和傑尼龜同時抓住了最後一顆好吃的「落落莓」，誰也不肯放手。兩隻寶可夢氣到快打起來了！",
-              choices: [
-                {
-                  id: 'A',
-                  text: "發動【對戰】 (互不相讓，用力搶奪)",
-                  choiceImg: "./dojo3_A1.png",
-                  resultImg: "./dojo3_A2.png",
-                  resultText: "樹果在搶奪中被捏壞了，兩隻寶可夢也都受傷了，這不是好辦法。",
-                  isCorrect: false
-                },
-                {
-                  id: 'B',
-                  text: "發動【冥想】 (轉身背對背，深呼吸)",
-                  choiceImg: "./dojo3_B1.png",
-                  resultImg: "./dojo3_B2.png",
-                  resultText: "太好了！冷靜下來後，小火龍說：「我很難過，因為我也想吃。」最後他們決定把果實分兩半，一人吃一半！",
-                  isCorrect: true,
-                  badgeName: "友誼徽章",
-                  badgeIcon: "🤝",
-                  badgeImg: "./badges3.png"
-                }
-              ]
-            },
-            4: {
-              id: 4,
-              name: "挑戰火山",
-              icon: "🌋",
-              position: { top: '25%', left: '25%' },
-              sceneImg: "./scenegraph_dojo4_contest.png",
-              story: "在飛行比賽中，噴火龍輸給了快龍。噴火龍覺得自己很笨，沮喪得連尾巴上的火焰都快熄滅了，眼淚也掉了下來。",
-              choices: [
-                {
-                  id: 'A',
-                  text: "發動【放棄】 (躺在地上哭，再也不飛)",
-                  choiceImg: "./dojo4_A1.png",
-                  resultImg: "./dojo4_A2.png",
-                  resultText: "放棄的話，經驗值就沒辦法累積了，好可惜喔。難過是可以的，但不要忘記自己的優點。",
-                  isCorrect: false
-                },
-                {
-                  id: 'B',
-                  text: "發動【自我再生】 (告訴自己下次再努力)",
-                  choiceImg: "./dojo4_B1.png",
-                  resultImg: "./dojo4_B2.png",
-                  resultText: "沒錯！失敗是進化的過程！眼淚洗掉了難過，噴火龍的火焰又變大了，你獲得了「挫折免疫力」！",
-                  isCorrect: true,
-                  badgeName: "勇氣徽章",
-                  badgeIcon: "🔥",
-                  badgeImg: "./badges4.png"
-                }
-              ]
-            },
-            5: {
-              id: 5,
-              name: "亮閃閃商店街",
-              icon: "🏪",
-              position: { top: '80%', left: '25%' },
-              sceneImg: "./scenegraph_dojo5_shopwindow.png",
-              story: "喵喵看到超喜歡的「卡比獸大娃娃」，大喊：「我要買！」但是訓練家說：「不行，我們今天沒有帶買玩具的金幣。」",
-              choices: [
-                {
-                  id: 'A',
-                  text: "發動【貓老大咆哮】 (躺地大哭大鬧耍賴)",
-                  choiceImg: "./dojo5_A1.png",
-                  resultImg: "./dojo5_A2.png",
-                  resultText: "喵喵的衝動能量爆發了！可是哭鬧沒辦法變出金幣，娃娃還是買不到呀。",
-                  isCorrect: false
-                },
-                {
-                  id: 'B',
-                  text: "發動【忍耐】 (深呼吸數到10，問下次買)",
-                  choiceImg: "./dojo5_B1.png",
-                  resultImg: "./dojo5_B2.png",
-                  resultText: "太厲害了！你學會了控制心裡的「任性貓」。訓練家給了你一本「任務圖鑑」，只要學會等待和努力，最後的禮物會更棒喔！",
-                  isCorrect: true,
-                  badgeName: "耐心徽章",
-                  badgeIcon: "⏳",
-                  badgeImg: "./badges5.png"
-                }
-              ]
-            }
+            1: { id: 1, name: "迷霧森林", position: { top: '20%', left: '50%' }, sceneImg: "./scenegraph_dojo1_misty_forest.png", story: "搗蛋的「耿鬼」跑來找你，指著樹下睡覺的同學說：「我們去把他的精靈球藏起來！如果你不跟我一起去，我就不跟你做朋友了！」", choices: [{ id: 'A', text: "跟著做 (為了過關，只好跟著去)", choiceImg: "./dojo1_A1.png", resultImg: "./dojo1_A2.png", resultText: "雖然你跟著去了，但你的心裡覺得悶悶的。真正的朋友，不會逼你做會讓別人受傷的事喔。", isCorrect: false }, { id: 'B', text: "發動【守住】 (雙手比X，大聲拒絕)", choiceImg: "./dojo1_B1.png", resultImg: "./dojo1_B2.png", resultText: "漂亮！你成功發動了【守住】！你保護了自己的心，耿鬼被你的堅定嚇跑，迷霧散開了！", isCorrect: true, badgeName: "界線徽章", badgeImg: "./badges1.png" }] },
+            2: { id: 2, name: "溫馨草原", position: { top: '75%', left: '75%' }, sceneImg: "./scenegraph_dojo2_meadow.png", story: "訓練家帶回了一顆蛋，孵出了可愛的「波克比」。訓練家都在照顧波克比，原本最受寵愛的「伊布」覺得自己被冷落了，心裡酸酸的，好像有把火在燒。", choices: [{ id: 'A', text: "發動【衝擊】 (撞翻奶瓶，大哭大鬧)", choiceImg: "./dojo2_A1.png", resultImg: "./dojo2_A2.png", resultText: "哎呀，雖然你很難過，但撞人會讓大家受傷，訓練家也會生氣喔。", isCorrect: false }, { id: 'B', text: "發動【撒嬌】 (蹭一蹭，說出需要)", choiceImg: "./dojo2_B1.png", resultImg: "./dojo2_B2.png", resultText: "你真棒！成功收服了心裡的「嫉妒怪」。訓練家空出一隻手摸摸伊布說：「謝謝伊布等我，我也很愛你喔！」", isCorrect: true, badgeName: "愛心徽章", badgeImg: "./badges2.png" }] },
+            3: { id: 3, name: "分享果園", position: { top: '30%', left: '80%' }, sceneImg: "./scenegraph_dojo3_fruit_orchard.png", story: "小火龍和傑尼龜同時抓住了最後一顆好吃的「落落莓」，誰也不肯放手。兩隻寶可夢氣到快打起來了！", choices: [{ id: 'A', text: "發動【對戰】 (互不相讓，用力搶奪)", choiceImg: "./dojo3_A1.png", resultImg: "./dojo3_A2.png", resultText: "樹果在搶奪中被捏壞了，兩隻寶可夢也都受傷了，這不是好辦法。", isCorrect: false }, { id: 'B', text: "發動【冥想】 (轉身背對背，深呼吸)", choiceImg: "./dojo3_B1.png", resultImg: "./dojo3_B2.png", resultText: "太好了！冷靜下來後，小火龍說：「我很難過，因為我也想吃。」最後他們決定把果實分兩半，一人吃一半！", isCorrect: true, badgeName: "友誼徽章", badgeImg: "./badges3.png" }] },
+            4: { id: 4, name: "挑戰火山", position: { top: '25%', left: '25%' }, sceneImg: "./scenegraph_dojo4_contest.png", story: "在飛行比賽中，噴火龍輸給了快龍。噴火龍覺得自己很笨，沮喪得連尾巴上的火焰都快熄滅了，眼淚也掉了下來。", choices: [{ id: 'A', text: "發動【放棄】 (躺在地上哭，再也不飛)", choiceImg: "./dojo4_A1.png", resultImg: "./dojo4_A2.png", resultText: "放棄的話，經驗值就沒辦法累積了，好可惜喔。難過是可以的，但不要忘記自己的優點。", isCorrect: false }, { id: 'B', text: "發動【自我再生】 (告訴自己下次再努力)", choiceImg: "./dojo4_B1.png", resultImg: "./dojo4_B2.png", resultText: "沒錯！失敗是進化的過程！眼淚洗掉了難過，噴火龍的火焰又變大了，你獲得了「挫折免疫力」！", isCorrect: true, badgeName: "勇氣徽章", badgeImg: "./badges4.png" }] },
+            5: { id: 5, name: "亮閃閃商店街", position: { top: '80%', left: '25%' }, sceneImg: "./scenegraph_dojo5_shopwindow.png", story: "喵喵看到超喜歡的「卡比獸大娃娃」，大喊：「我要買！」但是訓練家說：「不行，我們今天沒有帶買玩具的金幣。」", choices: [{ id: 'A', text: "發動【貓老大咆哮】 (躺地大哭大鬧耍賴)", choiceImg: "./dojo5_A1.png", resultImg: "./dojo5_A2.png", resultText: "喵喵的衝動能量爆發了！可是哭鬧沒辦法變出金幣，娃娃還是買不到呀。", isCorrect: false }, { id: 'B', text: "發動【忍耐】 (深呼吸數到10，問下次買)", choiceImg: "./dojo5_B1.png", resultImg: "./dojo5_B2.png", resultText: "太厲害了！你學會了控制心裡的「任性貓」。訓練家給了你一本「任務圖鑑」，只要學會等待和努力，最後的禮物會更棒喔！", isCorrect: true, badgeName: "耐心徽章", badgeImg: "./badges5.png" }] }
           },
           mapBg: "./map.png",
-          endingImg: "./game_complete.png"
+          endingImg: "./game_complete.png",
+          players: ["./player01.png", "./player02.png"]
         };
 
         function App() {
-          const [currentScreen, setCurrentScreen] = useState('intro'); // intro, map, gym, result, badge_award, ending
+          const [currentScreen, setCurrentScreen] = useState('loading');
           const [activeGymId, setActiveGymId] = useState(null);
           const [selectedChoice, setSelectedChoice] = useState(null);
-          const [badges, setBadges] = useState([]); 
-          const [trainerGender, setTrainerGender] = useState('girl'); 
-          
-          // 新增：音樂控制相關狀態與引用
-          const audioRef = useRef(null);
+          const [badges, setBadges] = useState([]);
+          const [trainerGender, setTrainerGender] = useState('girl');
           const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+          const [scale, setScale] = useState(1);
+          const [loadProgress, setLoadProgress] = useState(0);
+          const audioRef = useRef(null);
 
-          const handleStart = () => {
-            setCurrentScreen('map');
-            // 點擊開始時，嘗試自動播放音樂 (瀏覽器允許在使用者互動後播放)
-            if (audioRef.current && !isMusicPlaying) {
-              audioRef.current.play().then(() => {
-                setIsMusicPlaying(true);
-              }).catch((e) => {
-                console.log("自動播放音樂被瀏覽器阻擋：", e);
-              });
-            }
-          };
+          // --- 1. 預載入邏輯 ---
+          useEffect(() => {
+            const imageUrls = [
+              gameData.mapBg, gameData.endingImg, ...gameData.players
+            ];
+            Object.values(gameData.gyms).forEach(gym => {
+              imageUrls.push(gym.sceneImg, gym.badgeImg);
+              gym.choices.forEach(c => imageUrls.push(c.choiceImg, c.resultImg));
+            });
+
+            let loadedCount = 0;
+            const total = imageUrls.length;
+            imageUrls.forEach(url => {
+              const img = new Image();
+              img.src = url;
+              img.onload = () => {
+                loadedCount++;
+                setLoadProgress(Math.floor((loadedCount / total) * 100));
+                if (loadedCount === total) setTimeout(() => setCurrentScreen('intro'), 500);
+              };
+              img.onerror = () => {
+                loadedCount++; // 即使報錯也跳過，避免卡死
+                if (loadedCount === total) setCurrentScreen('intro');
+              };
+            });
+          }, []);
+
+          // --- 2. 螢幕縮放邏輯 ---
+          useEffect(() => {
+            const handleResize = () => {
+              const winW = window.innerWidth;
+              const winH = window.innerHeight;
+              const scale = Math.min(winW / 1280, winH / 720);
+              setScale(scale);
+            };
+            handleResize();
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+          }, []);
 
           const toggleMusic = () => {
-            if (isMusicPlaying) {
-              audioRef.current.pause();
-            } else {
-              audioRef.current.play();
-            }
+            if (isMusicPlaying) audioRef.current.pause();
+            else audioRef.current.play();
             setIsMusicPlaying(!isMusicPlaying);
           };
 
-          const handleEnterGym = (id) => {
-            setActiveGymId(id);
-            setSelectedChoice(null);
-            setCurrentScreen('gym');
-          };
-
-          const handleChoice = (choice) => {
-            setSelectedChoice(choice);
-            setCurrentScreen('result');
-          };
-
-          const handleNextFromResult = () => {
-            if (selectedChoice.isCorrect) {
-              // 成功後，判斷是否為新徽章，進入獲得徽章畫面
-              if (!badges.includes(activeGymId)) {
-                 setCurrentScreen('badge_award');
-              } else {
-                 setCurrentScreen('map');
-              }
-            } else {
-              // 如果選錯了，重新挑戰這個道館
-              setCurrentScreen('gym');
-              setSelectedChoice(null);
-            }
-          };
-
-          const handleCollectBadge = () => {
-            if (!badges.includes(activeGymId)) {
-              const newBadges = [...badges, activeGymId];
-              setBadges(newBadges);
-              if (newBadges.length === 5) {
-                setCurrentScreen('ending');
-                return;
-              }
-            }
-            setCurrentScreen('map');
-          };
+          const renderLoading = () => (
+            <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white">
+              <div className="text-2xl mb-4">正在載入寶可夢島素材... {loadProgress}%</div>
+              <div className="w-64 h-4 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-yellow-400 transition-all duration-300" style={{ width: `${loadProgress}%` }}></div>
+              </div>
+            </div>
+          );
 
           const renderIntro = () => (
-            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-              <h1 className="text-4xl md:text-6xl font-bold text-yellow-600 mb-6 tracking-wider">🗺️ 寶可夢島：訓練家的情緒調節試煉</h1>
-              <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mb-8 leading-relaxed">
-                各位新手訓練家，歡迎來到寶可夢島！<br/>這座島上有五個神秘的道館，裡面住著遇到不同『情緒』困難的寶可夢。<br/>
-                只要你能用正確的技能幫助他們解決問題，就能收集到五枚情緒徽章，成為真正的『情緒大師』！
-              </p>
-              <button 
-                onClick={handleStart}
-                className="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-white text-2xl font-bold rounded-full shadow-lg transform transition hover:scale-105"
-              >
-                大家準備好了嗎？出發！
-              </button>
+            <div className="relative h-full w-full flex flex-col items-center justify-center bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
+              <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+              <div className="relative z-10 text-center">
+                <h1 className="text-6xl font-bold text-white mb-8 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">寶可夢島：訓練家的情緒調節試煉</h1>
+                <button onClick={() => { setCurrentScreen('map'); if(audioRef.current) { audioRef.current.play(); setIsMusicPlaying(true); } }} 
+                  className="px-12 py-6 bg-yellow-500 hover:bg-yellow-400 text-white text-3xl font-bold rounded-full shadow-2xl transform transition hover:scale-110">
+                  大家準備好了嗎？出發！
+                </button>
+              </div>
             </div>
           );
 
           const renderMap = () => (
-            <div className="flex flex-col h-screen bg-orange-50">
-              <div className="p-4 bg-white shadow-md flex justify-between items-center z-10">
-                <h2 className="text-2xl font-bold text-orange-600">寶可夢島地圖 (請點擊道館挑戰)</h2>
-                <div className="flex gap-2">
-                  {/* 徽章收集區 */}
-                  {[1, 2, 3, 4, 5].map(id => (
-                    <div key={id} className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-100 overflow-hidden">
-                      {badges.includes(id) ? (
-                        <img src={gameData.gyms[id].badgeImg} alt="Badge" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-gray-400 opacity-50">?</span>
-                      )}
-                    </div>
-                  ))}
+            <div className="relative h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
+              {/* Header: 無白底 */}
+              <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
+                <div className="flex items-center gap-4 pointer-events-auto">
+                   {/* 音樂按鍵移至最左側 */}
+                   <button onClick={toggleMusic} className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg border-4 border-yellow-400 text-2xl hover:scale-110 transition">
+                    {isMusicPlaying ? '🎵' : '🔇'}
+                  </button>
+                  {/* 徽章欄 */}
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(id => (
+                      <div key={id} className="w-14 h-14 rounded-full border-4 border-dashed border-white border-opacity-50 flex items-center justify-center bg-black bg-opacity-20 backdrop-blur-sm overflow-hidden">
+                        {badges.includes(id) ? <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-cover" /> : null}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                <h2 className="text-3xl font-bold text-white drop-shadow-lg pointer-events-auto">寶可夢島地圖</h2>
               </div>
               
-              {/* 地圖區域 */}
-              <div className="relative flex-grow overflow-hidden bg-gray-200">
-                <img src={gameData.mapBg} alt="Map Background" className="w-full h-full object-cover opacity-80" />
-                
-                {/* 動態產生道館按鈕 */}
-                {Object.values(gameData.gyms).map(gym => {
-                  const isCompleted = badges.includes(gym.id);
-                  return (
-                    <button
-                      key={gym.id}
-                      onClick={() => handleEnterGym(gym.id)}
-                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 ${isCompleted ? 'opacity-70' : 'animate-bounce'}`}
-                      style={{ top: gym.position.top, left: gym.position.left }}
-                    >
-                      <span className={`px-4 py-2 rounded-full text-lg md:text-xl font-bold shadow-xl border-4 ${isCompleted ? 'bg-gray-300 border-gray-400 text-gray-600' : 'bg-white border-yellow-400 text-gray-800'}`}>
-                        {isCompleted ? '✅ ' : ''}{gym.name}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+              {Object.values(gameData.gyms).map(gym => {
+                const isCompleted = badges.includes(gym.id);
+                return (
+                  <button key={gym.id} onClick={() => { setActiveGymId(gym.id); setSelectedChoice(null); setCurrentScreen('gym'); }}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 ${isCompleted ? 'opacity-70' : 'animate-bounce'}`}
+                    style={{ top: gym.position.top, left: gym.position.left }}>
+                    <span className={`px-6 py-2 rounded-full text-xl font-bold shadow-2xl border-4 ${isCompleted ? 'bg-gray-400 border-gray-600 text-white' : 'bg-white border-yellow-400 text-gray-800'}`}>
+                      {isCompleted ? '✅ ' : ''}{gym.name}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           );
 
           const renderGym = () => {
             const gym = gameData.gyms[activeGymId];
-            const trainerIconSrc = trainerGender === 'girl' ? "./player01.png" : "./player02.png";
-
             return (
-              <div className="flex flex-col min-h-screen bg-blue-50 p-4 md:p-8">
-                <div className="max-w-4xl mx-auto w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+              <div className="flex flex-col h-full bg-blue-50 p-8">
+                <div className="max-w-5xl mx-auto w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
                   <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={trainerIconSrc} 
-                        alt="Trainer" 
-                        className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-white bg-white object-cover cursor-pointer hover:opacity-80 transition"
-                        title="點擊切換男孩/女孩"
-                        onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')}
-                      />
-                      <h2 className="text-2xl md:text-3xl font-bold">{gym.name}</h2>
+                    <div className="flex items-center gap-4">
+                      <img src={trainerGender === 'girl' ? "./player01.png" : "./player02.png"} 
+                        className="w-16 h-16 rounded-full border-4 border-white bg-white object-cover cursor-pointer hover:scale-110 transition"
+                        onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')} />
+                      <h2 className="text-3xl font-bold">{gym.name}</h2>
                     </div>
-                    <button onClick={() => setCurrentScreen('map')} className="text-white hover:text-blue-200 font-bold">返回地圖</button>
+                    <button onClick={() => setCurrentScreen('map')} className="text-xl font-bold hover:underline">返回地圖</button>
                   </div>
-                  
-                  {/* 場景圖片 */}
-                  <div className="w-full h-64 md:h-96 bg-gray-200 relative">
-                    <img src={gym.sceneImg} alt={gym.name} className="w-full h-full object-cover" />
-                  </div>
-
-                  <div className="p-6 md:p-8 flex-grow flex flex-col">
-                    <p className="text-xl md:text-2xl text-gray-800 mb-8 leading-relaxed border-l-8 border-blue-500 pl-4 bg-blue-50 py-4 rounded-r-lg">
-                      {gym.story}
-                    </p>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 mt-auto">
-                      {gym.choices.map((choice) => (
-                        <button
-                          key={choice.id}
-                          onClick={() => handleChoice(choice)}
-                          className="p-4 text-lg md:text-xl font-bold rounded-2xl border-4 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition shadow-sm text-left flex flex-col items-center gap-4 group bg-white"
-                        >
-                          {/* 選項示意圖 */}
-                          <div className="w-full h-32 md:h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-transparent group-hover:border-blue-300 transition relative">
-                            <img src={choice.choiceImg} alt={choice.text} className="w-full h-full object-cover" />
-                          </div>
-                          
-                          <div className="flex items-center gap-4 w-full">
-                            <span className="bg-blue-100 text-blue-800 w-10 h-10 rounded-full flex items-center justify-center shrink-0">{choice.id}</span>
-                            <span>{choice.text}</span>
-                          </div>
-                        </button>
-                      ))}
+                  <div className="flex-1 overflow-y-auto">
+                    <img src={gym.sceneImg} className="w-full h-64 object-cover" />
+                    <div className="p-8">
+                      <p className="text-2xl text-gray-800 mb-8 leading-relaxed bg-blue-50 p-6 rounded-2xl border-l-8 border-blue-500">{gym.story}</p>
+                      <div className="grid grid-cols-2 gap-6">
+                        {gym.choices.map(c => (
+                          <button key={c.id} onClick={() => { setSelectedChoice(c); setCurrentScreen('result'); }}
+                            className="p-4 bg-white border-4 border-gray-100 hover:border-blue-500 rounded-2xl shadow hover:shadow-xl transition flex flex-col items-center gap-4">
+                            <img src={c.choiceImg} className="w-full h-40 object-cover rounded-xl" />
+                            <div className="flex items-center gap-4 w-full">
+                              <span className="bg-blue-100 text-blue-800 w-10 h-10 rounded-full flex items-center justify-center shrink-0">{c.id}</span>
+                              <span className="text-xl font-bold">{c.text}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -384,107 +232,67 @@
           };
 
           const renderResult = () => {
-            const gym = gameData.gyms[activeGymId];
             const isSuccess = selectedChoice.isCorrect;
-
             return (
-              <div className={`flex flex-col min-h-screen p-4 md:p-8 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}>
-                 <div className="max-w-4xl mx-auto w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-                  
-                  <div className={`p-4 text-white text-center ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
-                     <h2 className="text-3xl font-bold">{isSuccess ? '🌟 挑戰成功！' : '💦 哎呀，再試一次！'}</h2>
+              <div className={`flex flex-col h-full p-8 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="max-w-4xl mx-auto w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                  <div className={`p-4 text-white text-center text-3xl font-bold ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
+                    {isSuccess ? '🌟 挑戰成功！' : '💦 哎呀，再試一次！'}
                   </div>
-
-                  {/* 結局圖片 */}
-                  <div className="w-full h-64 md:h-96 bg-gray-200 relative">
-                    <img src={selectedChoice.resultImg} alt="Result" className="w-full h-full object-cover" />
-                  </div>
-
-                  <div className="p-6 md:p-8 flex flex-col items-center text-center">
-                    <p className="text-2xl md:text-3xl text-gray-800 mb-8 leading-relaxed">
-                      {selectedChoice.resultText}
-                    </p>
-
-                    <button
-                      onClick={handleNextFromResult}
-                      className={`px-8 py-4 text-2xl font-bold rounded-full shadow-lg transform transition hover:scale-105 text-white ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}
-                    >
+                  <img src={selectedChoice.resultImg} className="w-full h-80 object-cover" />
+                  <div className="p-8 flex flex-col items-center text-center justify-center flex-1">
+                    <p className="text-3xl text-gray-800 mb-8">{selectedChoice.resultText}</p>
+                    <button onClick={() => isSuccess ? setCurrentScreen(badges.includes(activeGymId) ? 'map' : 'badge_award') : setCurrentScreen('gym')}
+                      className={`px-12 py-5 text-2xl font-bold text-white rounded-full shadow-xl transition hover:scale-110 ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}>
                       {isSuccess ? '繼續' : '重新想一想'}
                     </button>
                   </div>
-                 </div>
+                </div>
               </div>
             );
           };
 
-          const renderBadgeAward = () => {
-            const gym = gameData.gyms[activeGymId];
-            return (
-              <div className="flex flex-col min-h-screen p-4 md:p-8 bg-yellow-50 items-center justify-center">
-                 <div className="max-w-2xl mx-auto w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center p-10 border-8 border-yellow-300 text-center">
-                    
-                    <h2 className="text-4xl md:text-5xl font-bold text-yellow-600 mb-8">獲得徽章！</h2>
-
-                    <div className="mb-10 animate-badge-pop">
-                      <img src={gym.badgeImg} alt={gym.badgeName} className="w-48 h-48 md:w-64 md:h-64 rounded-full border-8 border-yellow-400 shadow-2xl mx-auto object-cover" />
-                      <p className="text-3xl font-bold text-yellow-600 mt-6">{gym.badgeName}</p>
-                    </div>
-
-                    <button
-                      onClick={handleCollectBadge}
-                      className="px-8 py-4 text-2xl font-bold rounded-full shadow-lg transform transition hover:scale-105 text-white bg-yellow-500 hover:bg-yellow-400"
-                    >
-                      收下徽章，回到地圖
-                    </button>
-                 </div>
+          const renderBadgeAward = () => (
+            <div className="flex flex-col h-full bg-yellow-50 items-center justify-center p-8">
+              <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-12 border-8 border-yellow-300 text-center flex flex-col items-center">
+                <h2 className="text-5xl font-bold text-yellow-600 mb-10">獲得徽章！</h2>
+                <div className="animate-badge-pop mb-10">
+                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-64 h-64 rounded-full border-8 border-yellow-400 shadow-2xl object-cover" />
+                  <p className="text-4xl font-bold text-yellow-600 mt-8">{gameData.gyms[activeGymId].badgeName}</p>
+                </div>
+                <button onClick={() => { setBadges([...badges, activeGymId]); if(badges.length+1 === 5) setCurrentScreen('ending'); else setCurrentScreen('map'); }}
+                  className="px-12 py-5 bg-yellow-500 text-white text-3xl font-bold rounded-full shadow-xl hover:bg-yellow-400 transition hover:scale-105">
+                  收下徽章，回到地圖
+                </button>
               </div>
-            );
-          };
+            </div>
+          );
 
           const renderEnding = () => (
-            <div className="flex flex-col min-h-screen bg-pink-50 p-6 items-center justify-center text-center">
-               <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-8 border-8 border-yellow-400">
-                  <h1 className="text-4xl md:text-6xl font-bold text-pink-600 mb-6">🎉 恭喜成為情緒大師！</h1>
-                  
-                  <div className="w-full h-64 md:h-96 bg-gray-200 relative rounded-xl overflow-hidden mb-8 shadow-inner">
-                    <img src={gameData.endingImg} alt="Ending" className="w-full h-full object-cover" />
-                  </div>
-
-                  <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto mb-8 leading-relaxed">
-                    快看！因為有你們的幫忙，耿鬼學會了尊重別人、伊布獲得了滿滿的愛、傑尼龜和小火龍成為了分享的好朋友，喵喵也懂得了耐心等待的魔法。<br/><br/>
-                    他們現在正手牽著手，在舞台上謝謝你們呢！
-                  </p>
-
-                  <div className="bg-yellow-100 p-6 rounded-2xl inline-block border-4 border-yellow-300">
-                    <p className="text-2xl font-bold text-yellow-800 mb-4">🏆 你的情緒大師徽章 🏆</p>
-                    <div className="flex flex-wrap justify-center gap-4">
+            <div className="h-full bg-pink-50 p-8 flex items-center justify-center">
+              <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-10 border-8 border-yellow-400 text-center overflow-y-auto">
+                <h1 className="text-5xl font-bold text-pink-600 mb-6">🎉 恭喜成為情緒大師！</h1>
+                <img src={gameData.endingImg} className="w-full h-80 object-cover rounded-2xl mb-8" />
+                <p className="text-2xl text-gray-700 leading-relaxed mb-8">因為有你們的幫忙，寶可夢們都學會了情緒魔法。他們現在正手牽著手，在舞台上謝謝你們呢！</p>
+                <div className="bg-yellow-100 p-8 rounded-3xl border-4 border-yellow-300 inline-block">
+                   <p className="text-2xl font-bold text-yellow-800 mb-6">🏆 你的情緒大師徽章 🏆</p>
+                   <div className="flex justify-center gap-6">
                       {Object.values(gameData.gyms).map(gym => (
-                         <div key={gym.id} className="flex flex-col items-center">
-                            <img src={gym.badgeImg} alt={gym.badgeName} className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md mb-2 object-cover" />
-                            <span className="text-sm font-bold text-gray-600">{gym.badgeName}</span>
-                         </div>
+                        <div key={gym.id} className="flex flex-col items-center">
+                          <img src={gym.badgeImg} className="w-24 h-24 rounded-full border-4 border-white shadow-md mb-2 object-cover" />
+                          <span className="text-sm font-bold text-gray-600">{gym.badgeName}</span>
+                        </div>
                       ))}
-                    </div>
-                  </div>
-               </div>
+                   </div>
+                </div>
+              </div>
             </div>
           );
 
           return (
-            <div className="text-gray-900 antialiased selection:bg-yellow-200 w-full min-h-screen relative">
-              
-              {/* 音樂播放器標籤 (隱藏) */}
-              <audio ref={audioRef} src="./bgm.mp3" loop preload="auto"></audio>
-              
-              {/* 右上角浮動音樂開關按鈕 */}
-              <button 
-                onClick={toggleMusic}
-                className="fixed top-4 right-4 z-50 p-3 w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg border-4 border-yellow-400 text-2xl hover:scale-110 transition"
-                title={isMusicPlaying ? "暫停音樂" : "播放音樂"}
-              >
-                {isMusicPlaying ? '🎵' : '🔇'}
-              </button>
-
+            <div id="game-container" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
+              <audio ref={audioRef} src="./bgm.mp3" loop></audio>
+              {currentScreen === 'loading' && renderLoading()}
               {currentScreen === 'intro' && renderIntro()}
               {currentScreen === 'map' && renderMap()}
               {currentScreen === 'gym' && renderGym()}
@@ -495,7 +303,6 @@
           );
         }
 
-        // 將 App 掛載到 HTML 的 root div 上
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>

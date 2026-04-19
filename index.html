@@ -4,78 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寶可夢島：訓練家的情緒調節試煉</title>
-    
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 引入 React 核心庫 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    
-    <!-- 引入 Babel 用於瀏覽器編譯 -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
-        /* 優先載入粉圓體，並以 Noto Sans TC 作為備援 */
         @import url('https://cdn.jsdelivr.net/npm/jf-openhuninn@1.1/jf-openhuninn-1.1.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
-        
-        :root {
-            --game-width: 1280px;
-            --game-height: 720px;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #222; /* 視窗外部背景色 */
-            font-family: 'jf-openhuninn', 'Noto Sans TC', sans-serif;
-        }
-
-        /* 外層封裝容器：負責置中 */
-        #viewport-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        /* 遊戲核心容器 */
-        #game-container {
-            position: relative;
-            width: var(--game-width);
-            height: var(--game-height);
-            background-color: #fefce8;
-            overflow: hidden;
-            box-shadow: 0 0 100px rgba(0,0,0,0.7);
-            flex-shrink: 0;
-        }
-
-        /* 隱藏滾動條 */
+        :root { --game-width: 1280px; --game-height: 720px; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #222; font-family: 'jf-openhuninn', 'Noto Sans TC', sans-serif; }
+        #viewport-wrapper { display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
+        #game-container { position: relative; width: var(--game-width); height: var(--game-height); background-color: #fefce8; overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.7); flex-shrink: 0; }
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
+        const apiKey = ""; 
 
+        // 修正重點：將 badgeImg 與 badgeName 移至道館的第一層結構
         const gameData = {
           gyms: {
-            1: { id: 1, name: "迷霧森林", position: { top: '20%', left: '50%' }, sceneImg: "./scenegraph_dojo1_misty_forest.png", story: "搗蛋的「耿鬼」跑來找你，指著樹下睡覺的同學說：「我們去把他的精靈球藏起來！如果你不跟我一起去，我就不跟你做朋友了！」", choices: [{ id: 'A', text: "跟著做 (為了過關，只好跟著去)", choiceImg: "./dojo1_A1.png", resultImg: "./dojo1_A2.png", resultText: "雖然你跟著去了，但你的心裡覺得悶悶的。真正的朋友，不會逼你做會讓別人受傷的事喔。", isCorrect: false }, { id: 'B', text: "發動【守住】 (雙手比X，大聲拒絕)", choiceImg: "./dojo1_B1.png", resultImg: "./dojo1_B2.png", resultText: "漂亮！你成功發動了【守住】！你保護了自己的心，耿鬼被你的堅定嚇跑，迷霧散開了！", isCorrect: true, badgeName: "界線徽章", badgeImg: "./badges1.png" }] },
-            2: { id: 2, name: "溫馨草原", position: { top: '75%', left: '75%' }, sceneImg: "./scenegraph_dojo2_meadow.png", story: "訓練家帶回了一顆蛋，孵出了可愛的「波克比」。訓練家都在照顧波克比，原本最受寵愛的「伊布」覺得自己被冷落了，心裡酸酸的，好像有把火在燒。", choices: [{ id: 'A', text: "發動【衝擊】 (撞翻奶瓶，大哭大鬧)", choiceImg: "./dojo2_A1.png", resultImg: "./dojo2_A2.png", resultText: "哎呀，雖然你難過，但撞人會讓大家受傷，訓練家也會生氣喔。", isCorrect: false }, { id: 'B', text: "發動【撒嬌】 (蹭一蹭，說出需要)", choiceImg: "./dojo2_B1.png", resultImg: "./dojo2_B2.png", resultText: "你真棒！成功收服了心裡的「嫉妒怪」。訓練家空出一隻手摸摸伊布說：「謝謝伊布等我，我也很愛你喔！」", isCorrect: true, badgeName: "愛心徽章", badgeImg: "./badges2.png" }] },
-            3: { id: 3, name: "分享果園", position: { top: '30%', left: '80%' }, sceneImg: "./scenegraph_dojo3_fruit_orchard.png", story: "小火龍和傑尼龜同時抓住了最後一顆好吃的「落落莓」，誰也不肯放手。兩隻寶可夢氣到快打起來了！", choices: [{ id: 'A', text: "發動【對戰】 (互不相讓，用力搶奪)", choiceImg: "./dojo3_A1.png", resultImg: "./dojo3_A2.png", resultText: "樹果在搶奪中被捏壞了，兩隻寶可夢也都受傷了，這不是好辦法。", isCorrect: false }, { id: 'B', text: "發動【冥想】 (轉身背對背，深呼吸)", choiceImg: "./dojo3_B1.png", resultImg: "./dojo3_B2.png", resultText: "太好了！冷靜下來後，小火龍說：「我很難過，因為我也想吃。」最後他們決定把果實分兩半，一人吃一半！", isCorrect: true, badgeName: "友誼徽章", badgeImg: "./badges3.png" }] },
-            4: { id: 4, name: "挑戰火山", position: { top: '25%', left: '25%' }, sceneImg: "./scenegraph_dojo4_contest.png", story: "在飛行比賽中，噴火龍輸給了快龍。噴火龍覺得自己很笨，沮喪得連尾巴上的火焰都快熄滅了，眼淚也掉了下來。", choices: [{ id: 'A', text: "發動【放棄】 (躺在地上哭，再也不飛)", choiceImg: "./dojo4_A1.png", resultImg: "./dojo4_A2.png", resultText: "放棄的話，經驗值就沒辦法累積了，好可惜喔。難過是可以的，但不要忘記自己的優點。", isCorrect: false }, { id: 'B', text: "發動【自我再生】 (告訴自己下次再努力)", choiceImg: "./dojo4_B1.png", resultImg: "./dojo4_B2.png", resultText: "沒錯！失敗是進化的過程！眼淚洗掉了難過，噴火龍的火焰又變大了，你獲得了「挫折免疫力」！", isCorrect: true, badgeName: "勇氣徽章", badgeImg: "./badges4.png" }] },
-            5: { id: 5, name: "亮閃閃商店街", position: { top: '80%', left: '25%' }, sceneImg: "./scenegraph_dojo5_shopwindow.png", story: "喵喵看到超喜歡的「卡比獸大娃娃」，大喊：「我要買！」但是訓練家說：「不行，我們今天沒有帶買玩具的金幣。」", choices: [{ id: 'A', text: "發動【貓老大咆哮】 (躺地大哭大鬧耍賴)", choiceImg: "./dojo5_A1.png", resultImg: "./dojo5_A2.png", resultText: "喵喵的衝動能量爆發了！可是哭鬧沒辦法變出金幣，娃娃還是買不到呀。", isCorrect: false }, { id: 'B', text: "發動【忍耐】 (深呼吸數到10，問下次買)", choiceImg: "./dojo5_B1.png", resultImg: "./dojo5_B2.png", resultText: "太厲害了！你學會了控制心裡的「任性貓」。訓練家給了你一本「任務圖鑑」，只要學會等待和努力，最後的禮物會更棒喔！", isCorrect: true, badgeName: "耐心徽章", badgeImg: "./badges5.png" }] }
+            1: { 
+              id: 1, name: "迷霧森林", badgeName: "界線徽章", badgeImg: "./badges1.png", position: { top: '20%', left: '50%' }, sceneImg: "./scenegraph_dojo1_misty_forest.png", story: "搗蛋的「耿鬼」跑來找你，指著樹下睡覺的同學說：「我們去把他的精靈球藏起來！如果你不跟我一起去，我就不跟你做朋友了！」", 
+              choices: [
+                { id: 'A', text: "跟著做 (為了過關，只好跟著去)", choiceImg: "./dojo1_A1.png", resultImg: "./dojo1_A2.png", resultText: "雖然你跟著去了，但你的心裡覺得悶悶的。真正的朋友，不會逼你做會讓別人受傷的事喔。", isCorrect: false }, 
+                { id: 'B', text: "發動【守住】 (雙手比X，大聲拒絕)", choiceImg: "./dojo1_B1.png", resultImg: "./dojo1_B2.png", resultText: "漂亮！你成功發動了【守住】！你保護了自己的心，耿鬼被你的堅定嚇跑，迷霧散開了！", isCorrect: true }
+              ] 
+            },
+            2: { 
+              id: 2, name: "溫馨草原", badgeName: "愛心徽章", badgeImg: "./badges2.png", position: { top: '75%', left: '75%' }, sceneImg: "./scenegraph_dojo2_meadow.png", story: "訓練家帶回了一顆蛋，孵出了可愛的「波克比」。訓練家都在照顧波克比，原本最受寵愛的「伊布」覺得自己被冷落了，心裡酸酸的，好像有把火在燒。", 
+              choices: [
+                { id: 'A', text: "發動【衝擊】 (撞翻奶瓶，大哭大鬧)", choiceImg: "./dojo2_A1.png", resultImg: "./dojo2_A2.png", resultText: "哎呀，雖然你很難過，但撞人會讓大家受傷，訓練家也會生氣喔。", isCorrect: false }, 
+                { id: 'B', text: "發動【撒嬌】 (蹭一蹭，說出需要)", choiceImg: "./dojo2_B1.png", resultImg: "./dojo2_B2.png", resultText: "你真棒！成功收服了心裡的「嫉妒怪」。訓練家空出一隻手摸摸伊布說：「謝謝伊布等我，我也很愛你喔！」", isCorrect: true }
+              ] 
+            },
+            3: { 
+              id: 3, name: "分享果園", badgeName: "友誼徽章", badgeImg: "./badges3.png", position: { top: '30%', left: '80%' }, sceneImg: "./scenegraph_dojo3_fruit_orchard.png", story: "小火龍和傑尼龜同時抓住了最後一顆好吃的「落落莓」，誰也不肯放手。兩隻寶可夢氣到快打起來了！", 
+              choices: [
+                { id: 'A', text: "發動【對戰】 (互不相讓，用力搶奪)", choiceImg: "./dojo3_A1.png", resultImg: "./dojo3_A2.png", resultText: "樹果在搶奪中被捏壞了，兩隻寶可夢也都受傷了，這不是好辦法。", isCorrect: false }, 
+                { id: 'B', text: "發動【冥想】 (轉身背對背，深呼吸)", choiceImg: "./dojo3_B1.png", resultImg: "./dojo3_B2.png", resultText: "太好了！冷靜下來後，小火龍說：「我很難過，因為我也想吃。」最後他們決定把果實分兩半，一人吃一半！", isCorrect: true }
+              ] 
+            },
+            4: { 
+              id: 4, name: "挑戰火山", badgeName: "勇氣徽章", badgeImg: "./badges4.png", position: { top: '25%', left: '25%' }, sceneImg: "./scenegraph_dojo4_contest.png", story: "在飛行比賽中，噴火龍輸給了快龍。噴火龍覺得自己很笨，沮喪得連尾巴上的火焰都快熄滅了，眼淚也掉了下來。", 
+              choices: [
+                { id: 'A', text: "發動【放棄】 (躺在地上哭，再也不飛)", choiceImg: "./dojo4_A1.png", resultImg: "./dojo4_A2.png", resultText: "放棄的話，經驗值就沒辦法累積了，好可惜喔。難過是可以的，但不要忘記自己的優點。", isCorrect: false }, 
+                { id: 'B', text: "發動【自我再生】 (告訴自己下次再努力)", choiceImg: "./dojo4_B1.png", resultImg: "./dojo4_B2.png", resultText: "沒錯！失敗是進化的過程！眼淚洗掉了難過，噴火龍的火焰又變大了，你獲得了「挫折免疫力」！", isCorrect: true }
+              ] 
+            },
+            5: { 
+              id: 5, name: "亮閃閃商店街", badgeName: "耐心徽章", badgeImg: "./badges5.png", position: { top: '80%', left: '25%' }, sceneImg: "./scenegraph_dojo5_shopwindow.png", story: "喵喵看到超喜歡的「卡比獸大娃娃」，大喊：「我要買！」但是訓練家說：「不行，我們今天沒有帶買玩具的金幣。」", 
+              choices: [
+                { id: 'A', text: "發動【貓老大咆哮】 (躺地大哭大鬧耍賴)", choiceImg: "./dojo5_A1.png", resultImg: "./dojo5_A2.png", resultText: "喵喵的衝動能量爆發了！可是哭鬧沒辦法變出金幣，娃娃還是買不到呀。", isCorrect: false }, 
+                { id: 'B', text: "發動【忍耐】 (深呼吸數到10，問下次買)", choiceImg: "./dojo5_B1.png", resultImg: "./dojo5_B2.png", resultText: "太厲害了！你學會了控制心裡的「任性貓」。訓練家給了你一本「任務圖鑑」，只要學會等待和努力，最後的禮物會更棒喔！", isCorrect: true }
+              ] 
+            }
           },
-          mapBg: "./map.png",
-          endingImg: "./game_complete.png",
-          players: ["./player01.png", "./player02.png"]
+          mapBg: "./map.png", endingImg: "./game_complete.png", players: ["./player01.png", "./player02.png"]
         };
 
         function App() {
@@ -90,103 +78,48 @@
           const audioRef = useRef(null);
 
           useEffect(() => {
-            const imageUrls = [gameData.mapBg, gameData.endingImg, ...gameData.players];
-            Object.values(gameData.gyms).forEach(gym => {
-              imageUrls.push(gym.sceneImg, gym.badgeImg);
-              gym.choices.forEach(c => imageUrls.push(c.choiceImg, c.resultImg));
-            });
-
-            let loadedCount = 0;
-            const total = imageUrls.length;
-            imageUrls.forEach(url => {
-              const img = new Image();
-              img.src = url;
-              img.onload = () => {
-                loadedCount++;
-                setLoadProgress(Math.floor((loadedCount / total) * 100));
-                if (loadedCount === total) setTimeout(() => setCurrentScreen('intro'), 500);
-              };
-              img.onerror = () => {
-                loadedCount++; 
-                if (loadedCount === total) setCurrentScreen('intro');
-              };
-            });
+            const images = [gameData.mapBg, gameData.endingImg, ...gameData.players];
+            Object.values(gameData.gyms).forEach(g => { images.push(g.sceneImg, g.badgeImg); g.choices.forEach(c => images.push(c.choiceImg, c.resultImg)); });
+            let count = 0;
+            images.forEach(u => { const i = new Image(); i.src = u; i.onload = () => { count++; setLoadProgress(Math.floor((count/images.length)*100)); if(count===images.length) setTimeout(()=>setCurrentScreen('intro'),500); }; i.onerror = () => { count++; if(count===images.length) setCurrentScreen('intro'); }; });
           }, []);
 
           useEffect(() => {
-            const handleResize = () => {
-              const winW = window.innerWidth;
-              const winH = window.innerHeight;
-              const s = Math.min(winW / 1280, winH / 720);
-              setScale(s);
-            };
-            handleResize();
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
+            const resize = () => setScale(Math.min(window.innerWidth / 1280, window.innerHeight / 720));
+            resize(); window.addEventListener('resize', resize);
+            return () => window.removeEventListener('resize', resize);
           }, []);
-
-          const toggleMusic = () => {
-            if (isMusicPlaying) audioRef.current.pause();
-            else audioRef.current.play();
-            setIsMusicPlaying(!isMusicPlaying);
-          };
-
-          const renderLoading = () => (
-            <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white w-full">
-              <div className="text-2xl mb-4">正在載入寶可夢島素材... {loadProgress}%</div>
-              <div className="w-64 h-4 bg-gray-700 rounded-full overflow-hidden">
-                <div className="h-full bg-yellow-400 transition-all duration-300" style={{ width: `${loadProgress}%` }}></div>
-              </div>
-            </div>
-          );
 
           const renderIntro = () => (
             <div className="relative h-full w-full flex flex-col items-center justify-center bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
               <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-              <div className="relative z-10 text-center px-4">
-                <h1 className="text-6xl font-bold text-white mb-12 drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">寶可夢島：訓練家的情緒調節試煉</h1>
-                <button onClick={() => { setCurrentScreen('map'); if(audioRef.current) { audioRef.current.play(); setIsMusicPlaying(true); } }} 
-                  className="px-16 py-8 bg-yellow-500 hover:bg-yellow-400 text-white text-4xl font-bold rounded-full shadow-[0_10px_20px_rgba(0,0,0,0.3)] transform transition hover:scale-110">
-                  大家準備好了嗎？出發！
-                </button>
+              <div className="relative z-10 text-center">
+                <h1 className="text-6xl font-bold text-white mb-12 drop-shadow-lg">寶可夢島：訓練家的情緒調節試煉</h1>
+                <button onClick={() => { setCurrentScreen('map'); if(audioRef.current) { audioRef.current.play(); setIsMusicPlaying(true); } }} className="px-16 py-8 bg-yellow-500 hover:bg-yellow-400 text-white text-4xl font-bold rounded-full shadow-2xl transition hover:scale-110">大家準備好了嗎？出發！</button>
               </div>
             </div>
           );
 
           const renderMap = () => (
             <div className="relative h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
-              {/* Header */}
               <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-start z-30 pointer-events-none">
                 <div className="flex items-center gap-6 pointer-events-auto">
-                   <button onClick={toggleMusic} className="w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl hover:scale-110 transition">
-                    {isMusicPlaying ? '🎵' : '🔇'}
-                  </button>
+                  <button onClick={() => { if(isMusicPlaying) audioRef.current.pause(); else audioRef.current.play(); setIsMusicPlaying(!isMusicPlaying); }} className="w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl transition hover:scale-110">{isMusicPlaying ? '🎵' : '🔇'}</button>
                   <div className="flex gap-3 bg-black bg-opacity-30 p-2 rounded-full backdrop-blur-md border border-white border-opacity-20 shadow-xl">
                     {[1, 2, 3, 4, 5].map(id => (
                       <div key={id} className="w-16 h-16 rounded-full border-4 border-dashed border-white border-opacity-30 flex items-center justify-center relative overflow-hidden">
-                        {badges.includes(id) ? (
-                            <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-contain p-1 relative z-10" />
-                        ) : null}
+                        {badges.includes(id) && <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-contain p-1 z-10" />}
                       </div>
                     ))}
                   </div>
                 </div>
-                <h2 className="text-4xl font-bold text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-auto">寶可夢島地圖</h2>
+                <h2 className="text-4xl font-bold text-white drop-shadow-lg pointer-events-auto">寶可夢島地圖</h2>
               </div>
-              
-              {/* 道館按鈕 */}
-              {Object.values(gameData.gyms).map(gym => {
-                const isCompleted = badges.includes(gym.id);
-                return (
-                  <button key={gym.id} onClick={() => { setActiveGymId(gym.id); setSelectedChoice(null); setCurrentScreen('gym'); }}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 z-20 ${isCompleted ? '' : 'animate-bounce'}`}
-                    style={{ top: gym.position.top, left: gym.position.left }}>
-                    <span className={`px-8 py-3 rounded-full text-2xl font-bold shadow-[0_8px_15px_rgba(0,0,0,0.3)] border-4 ${isCompleted ? 'bg-gray-400 border-gray-600 text-white' : 'bg-white border-yellow-400 text-gray-800'}`}>
-                      {gym.name}
-                    </span>
-                  </button>
-                )
-              })}
+              {Object.values(gameData.gyms).map(g => (
+                <button key={g.id} onClick={() => { setActiveGymId(g.id); setSelectedChoice(null); setCurrentScreen('gym'); }} className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 z-20 ${badges.includes(g.id) ? '' : 'animate-bounce'}`} style={{ top: g.position.top, left: g.position.left }}>
+                  <span className={`px-8 py-3 rounded-full text-2xl font-bold shadow-2xl border-4 ${badges.includes(g.id) ? 'bg-gray-500 border-gray-700 text-white' : 'bg-white border-yellow-400 text-gray-800'}`}>{g.name}</span>
+                </button>
+              ))}
             </div>
           );
 
@@ -195,31 +128,23 @@
             return (
               <div className="flex flex-col h-full bg-blue-50 p-8">
                 <div className="max-w-5xl mx-auto w-full h-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
-                  <div className="bg-blue-600 text-white p-6 flex justify-between items-center shadow-lg">
+                  <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
                     <div className="flex items-center gap-6">
-                      <img src={trainerGender === 'girl' ? "./player01.png" : "./player02.png"} 
-                        className="w-20 h-20 rounded-full border-4 border-white bg-white shadow-md object-cover cursor-pointer hover:rotate-12 transition transform"
-                        onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')} 
-                        title="點擊切換性別" />
-                      <h2 className="text-4xl font-bold tracking-wide">{gym.name}</h2>
+                      <img src={trainerGender === 'girl' ? "./player01.png" : "./player02.png"} className="w-20 h-20 rounded-full border-4 border-white shadow-md object-cover cursor-pointer hover:rotate-12 transition" onClick={() => setTrainerGender(trainerGender === 'girl' ? 'boy' : 'girl')} />
+                      <h2 className="text-4xl font-bold">{gym.name}</h2>
                     </div>
-                    <button onClick={() => setCurrentScreen('map')} className="text-2xl font-bold hover:text-blue-200 transition">返回地圖</button>
+                    <button onClick={() => setCurrentScreen('map')} className="text-2xl font-bold hover:text-blue-200">返回地圖</button>
                   </div>
                   <div className="flex-1 overflow-y-auto bg-gray-50">
-                    <div className="w-full h-80 bg-gray-100 flex items-center justify-center">
-                        <img src={gym.sceneImg} className="max-w-full max-h-full object-contain" />
-                    </div>
+                    <div className="w-full h-80 bg-gray-100 flex items-center justify-center"><img src={gym.sceneImg} className="max-w-full max-h-full object-contain" /></div>
                     <div className="p-10">
-                      <p className="text-3xl text-gray-800 mb-10 leading-relaxed bg-blue-100 p-8 rounded-3xl border-l-[12px] border-blue-500 shadow-sm">{gym.story}</p>
+                      <p className="text-3xl text-gray-800 mb-10 leading-relaxed bg-blue-100 p-8 rounded-3xl border-l-[12px] border-blue-500">{gym.story}</p>
                       <div className="grid grid-cols-2 gap-8">
                         {gym.choices.map(c => (
-                          <button key={c.id} onClick={() => { setSelectedChoice(c); setCurrentScreen('result'); }}
-                            className="p-6 bg-white border-4 border-gray-100 hover:border-blue-500 hover:bg-blue-50 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col items-center gap-6 group">
-                            <div className="w-full h-48 bg-gray-50 flex items-center justify-center rounded-2xl shadow-md overflow-hidden">
-                                <img src={c.choiceImg} className="max-w-full max-h-full object-contain group-hover:scale-105 transition" />
-                            </div>
+                          <button key={c.id} onClick={() => { setSelectedChoice(c); setCurrentScreen('result'); }} className="p-6 bg-white border-4 border-gray-100 hover:border-blue-500 hover:bg-blue-50 rounded-3xl shadow-lg transition flex flex-col items-center gap-6">
+                            <div className="w-full h-48 bg-gray-50 flex items-center justify-center rounded-2xl overflow-hidden"><img src={c.choiceImg} className="max-w-full max-h-full object-contain" /></div>
                             <div className="flex items-center gap-6 w-full text-left">
-                              <span className="bg-blue-600 text-white text-2xl w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-md font-bold">{c.id}</span>
+                              <span className="bg-blue-600 text-white text-2xl w-12 h-12 rounded-full flex items-center justify-center shrink-0 font-bold">{c.id}</span>
                               <span className="text-2xl font-bold text-gray-700">{c.text}</span>
                             </div>
                           </button>
@@ -236,19 +161,12 @@
             const isSuccess = selectedChoice.isCorrect;
             return (
               <div className={`flex flex-col h-full p-8 ${isSuccess ? 'bg-green-50' : 'bg-red-50'}`}>
-                <div className="max-w-4xl mx-auto w-full h-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-8 border-opacity-20 transition-colors" style={{borderColor: isSuccess ? '#22c55e' : '#ef4444'}}>
-                  <div className={`p-6 text-white text-center text-4xl font-bold shadow-md ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
-                    {isSuccess ? '挑戰成功！' : '哎呀，再試一次！'}
-                  </div>
-                  <div className="w-full h-[320px] bg-gray-100 flex items-center justify-center">
-                    <img src={selectedChoice.resultImg} className="max-w-full max-h-full object-contain" />
-                  </div>
+                <div className="max-w-4xl mx-auto w-full h-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-8 border-opacity-20" style={{borderColor: isSuccess ? '#22c55e' : '#ef4444'}}>
+                  <div className={`p-6 text-white text-center text-4xl font-bold ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>{isSuccess ? '挑戰成功！' : '哎呀，再試一次！'}</div>
+                  <div className="w-full h-[320px] bg-gray-100 flex items-center justify-center"><img src={selectedChoice.resultImg} className="max-w-full max-h-full object-contain" /></div>
                   <div className="p-8 flex flex-col items-center text-center justify-between flex-1 overflow-y-auto">
-                    <p className="text-4xl text-gray-800 font-bold leading-snug mb-6">{selectedChoice.resultText}</p>
-                    <button onClick={() => isSuccess ? setCurrentScreen(badges.includes(activeGymId) ? 'map' : 'badge_award') : setCurrentScreen('gym')}
-                      className={`px-16 py-6 text-3xl font-bold text-white rounded-full shadow-2xl transition transform hover:scale-110 mb-4 shrink-0 ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}>
-                      {isSuccess ? '繼續' : '重新想一想'}
-                    </button>
+                    <p className="text-4xl text-gray-800 font-bold mb-6 leading-snug">{selectedChoice.resultText}</p>
+                    <button onClick={() => isSuccess ? setCurrentScreen(badges.includes(activeGymId) ? 'map' : 'badge_award') : setCurrentScreen('gym')} className={`px-16 py-6 text-3xl font-bold text-white rounded-full shadow-2xl transition hover:scale-110 mb-4 ${isSuccess ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'}`}>{isSuccess ? '繼續' : '重新想一想'}</button>
                   </div>
                 </div>
               </div>
@@ -259,41 +177,29 @@
             <div className="flex flex-col h-full bg-yellow-50 items-center justify-center p-8">
               <div className="max-w-3xl w-full bg-white rounded-[50px] shadow-2xl p-16 border-[12px] border-yellow-300 text-center flex flex-col items-center">
                 <h2 className="text-6xl font-bold text-yellow-600 mb-12">獲得徽章！</h2>
-                <div className="mb-12">
-                  {/* 已移除名稱標題 */}
-                  <img src={gameData.gyms[activeGymId].badgeImg} className="w-72 h-72 rounded-full border-8 border-yellow-400 shadow-2xl object-contain bg-white p-4" />
-                </div>
-                <button onClick={() => { setBadges([...badges, activeGymId]); if(badges.length+1 === 5) setCurrentScreen('ending'); else setCurrentScreen('map'); }}
-                  className="px-16 py-6 bg-yellow-500 text-white text-4xl font-bold rounded-full shadow-2xl hover:bg-yellow-400 transition transform hover:scale-110">
-                  收下徽章，回到地圖
-                </button>
+                <div className="mb-12"><img src={gameData.gyms[activeGymId].badgeImg} className="w-72 h-72 rounded-full border-8 border-yellow-400 shadow-2xl object-contain bg-white p-4" /></div>
+                <button onClick={() => { setBadges([...badges, activeGymId]); if(badges.length+1 === 5) setCurrentScreen('ending'); else setCurrentScreen('map'); }} className="px-16 py-6 bg-yellow-500 text-white text-4xl font-bold rounded-full shadow-2xl hover:bg-yellow-400 transition hover:scale-110">收下徽章，回到地圖</button>
               </div>
             </div>
           );
 
           const renderEnding = () => (
-            <div className="h-full bg-pink-50 p-8 overflow-y-auto flex flex-col items-center justify-start">
+            <div className="h-full bg-pink-50 p-8 overflow-y-auto flex flex-col items-center">
               <div className="max-w-5xl w-full h-fit bg-white rounded-[50px] shadow-2xl p-12 py-16 border-[12px] border-yellow-400 text-center flex flex-col items-center mb-12">
                 <h1 className="text-6xl font-bold text-pink-600 mb-8">🎉 恭喜成為情緒大師！</h1>
-                <div className="w-full h-80 bg-gray-100 rounded-[40px] mb-10 flex items-center justify-center shadow-lg shrink-0">
-                    <img src={gameData.endingImg} className="max-w-full max-h-full object-contain" />
-                </div>
-                <p className="text-3xl text-gray-700 leading-relaxed mb-10 font-bold">因為有你們的幫忙，寶可夢們都學會了情緒魔法。<br/>他們現在正手牽著手，在舞台上謝謝你們呢！</p>
-                <div className="bg-yellow-100 p-10 rounded-[40px] border-4 border-yellow-300 inline-block shadow-inner w-full mb-10">
+                <div className="w-full h-80 bg-gray-100 rounded-[40px] mb-10 flex items-center justify-center shadow-lg"><img src={gameData.endingImg} className="max-w-full max-h-full object-contain" /></div>
+                <p className="text-3xl text-gray-700 leading-relaxed mb-10 font-bold text-center">因為有你們的幫忙，寶可夢們都學會了情緒魔法。<br/>他們現在正手牽著手，在舞台上謝謝你們呢！</p>
+                <div className="bg-yellow-100 p-10 rounded-[40px] border-4 border-yellow-300 w-full mb-10 shadow-inner">
                    <p className="text-4xl font-bold text-yellow-800 mb-10">🏆 你的情緒大師徽章 🏆</p>
                    <div className="flex justify-center gap-10">
-                      {Object.values(gameData.gyms).map(gym => (
-                        <div key={gym.id} className="flex flex-col items-center">
-                          <img src={gym.badgeImg} className="w-28 h-28 rounded-full border-4 border-white shadow-xl mb-4 object-contain bg-white p-2" />
-                          {/* 已移除徽章名稱 */}
+                      {Object.values(gameData.gyms).map(g => (
+                        <div key={g.id} className="flex flex-col items-center">
+                          <img src={g.badgeImg} className="w-28 h-28 rounded-full border-4 border-white shadow-xl object-contain bg-white p-2" />
                         </div>
                       ))}
                    </div>
                 </div>
-                <button onClick={() => setCurrentScreen('map')}
-                  className="px-16 py-6 bg-pink-500 text-white text-3xl font-bold rounded-full shadow-2xl hover:bg-pink-400 transition transform hover:scale-110 mb-4">
-                  返回地圖
-                </button>
+                <button onClick={() => setCurrentScreen('map')} className="px-16 py-6 bg-pink-500 text-white text-3xl font-bold rounded-full shadow-2xl hover:bg-pink-400 transition hover:scale-110">返回地圖</button>
               </div>
             </div>
           );
@@ -302,7 +208,7 @@
             <div id="viewport-wrapper">
                 <div id="game-container" style={{ transform: `scale(${scale})` }}>
                   <audio ref={audioRef} src="./bgm.mp3" loop></audio>
-                  {currentScreen === 'loading' && renderLoading()}
+                  {currentScreen === 'loading' && <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white w-full"><div className="text-2xl mb-4">正在載入素材... {loadProgress}%</div><div className="w-64 h-4 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 transition-all duration-300" style={{ width: `${loadProgress}%` }}></div></div></div>}
                   {currentScreen === 'intro' && renderIntro()}
                   {currentScreen === 'map' && renderMap()}
                   {currentScreen === 'gym' && renderGym()}
@@ -313,9 +219,7 @@
             </div>
           );
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>

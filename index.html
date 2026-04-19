@@ -73,6 +73,7 @@
           const [badges, setBadges] = useState([]);
           const [trainerGender, setTrainerGender] = useState('girl');
           const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+          const [isFullscreen, setIsFullscreen] = useState(false);
           const [scale, setScale] = useState(1);
           const [loadProgress, setLoadProgress] = useState(0);
           const audioRef = useRef(null);
@@ -90,6 +91,34 @@
             return () => window.removeEventListener('resize', resize);
           }, []);
 
+          useEffect(() => {
+            const handleFullscreenChange = () => {
+              setIsFullscreen(!!document.fullscreenElement || !!document.webkitFullscreenElement);
+            };
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            return () => {
+              document.removeEventListener('fullscreenchange', handleFullscreenChange);
+              document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            };
+          }, []);
+
+          const toggleFullscreen = () => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+              if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+              } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+              }
+            } else {
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              }
+            }
+          };
+
           const renderIntro = () => (
             <div className="relative h-full w-full flex flex-col items-center justify-center bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
               <div className="absolute inset-0 bg-black bg-opacity-30"></div>
@@ -104,16 +133,27 @@
             <div className="relative h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${gameData.mapBg})` }}>
               <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-start z-30 pointer-events-none">
                 <div className="flex items-center gap-6 pointer-events-auto">
-                  <button onClick={() => { if(isMusicPlaying) audioRef.current.pause(); else audioRef.current.play(); setIsMusicPlaying(!isMusicPlaying); }} className="w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl transition hover:scale-110">{isMusicPlaying ? '🎵' : '🔇'}</button>
+                  <button onClick={toggleFullscreen} className="w-[74px] h-[74px] flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-gray-800 transition hover:scale-110" title="全螢幕切換">
+                    {isFullscreen ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9V4.5M15 9h4.5M15 9l5.25-5.25M15 15v4.5M15 15h4.5M15 15l5.25 5.25" />
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                        </svg>
+                    )}
+                  </button>
+                  <button onClick={() => { if(isMusicPlaying) audioRef.current.pause(); else audioRef.current.play(); setIsMusicPlaying(!isMusicPlaying); }} className="w-[74px] h-[74px] flex items-center justify-center bg-white rounded-full shadow-2xl border-4 border-yellow-400 text-3xl transition hover:scale-110">{isMusicPlaying ? '🎵' : '🔇'}</button>
                   <div className="flex gap-3 bg-black bg-opacity-30 p-2 rounded-full backdrop-blur-md border border-white border-opacity-20 shadow-xl">
                     {[1, 2, 3, 4, 5].map(id => (
-                      <div key={id} className="w-16 h-16 rounded-full border-4 border-dashed border-white border-opacity-30 flex items-center justify-center relative overflow-hidden">
-                        {badges.includes(id) && <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-contain p-1 z-10" />}
+                      <div key={id} className="w-[74px] h-[74px] rounded-full border-4 border-dashed border-white border-opacity-30 flex items-center justify-center relative overflow-hidden">
+                        {badges.includes(id) && <img src={gameData.gyms[id].badgeImg} className="w-full h-full object-contain scale-[1.15] z-10" />}
                       </div>
                     ))}
                   </div>
                 </div>
-                <h2 className="text-4xl font-bold text-white drop-shadow-lg pointer-events-auto">寶可夢島地圖</h2>
+                <h2 className="text-4xl font-bold text-black drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)] pointer-events-auto">寶可夢島地圖</h2>
               </div>
               {Object.values(gameData.gyms).map(g => (
                 <button key={g.id} onClick={() => { setActiveGymId(g.id); setSelectedChoice(null); setCurrentScreen('gym'); }} className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group transition hover:scale-110 z-20 ${badges.includes(g.id) ? '' : 'animate-bounce'}`} style={{ top: g.position.top, left: g.position.left }}>
